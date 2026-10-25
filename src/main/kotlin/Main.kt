@@ -1,16 +1,14 @@
 package ssc
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-fun main() {
-    val name = "Kotlin"
-    //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-    // to see how IntelliJ IDEA suggests fixing it.
-    println("Hello, " + name + "!")
-
-    for (i in 1..5) {
-        //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        println("i = $i")
+fun main(args: Array<String>) {
+    when (args.firstOrNull()) {
+        "server" -> StreamServer.run(args.drop(1).toTypedArray())
+        "proxy" -> ProxySocketServer.run(args.drop(1).toTypedArray())
+        else -> println("""
+            Usage:
+              server [port=8081] [mediaDir=media]
+              proxy [port=8080] [originHost=localhost] [originPort=8081] [delayMillis=2000]
+            Start each component in a separate process. Open http://localhost:8080/ in your browser.
+        """.trimIndent())
     }
 }

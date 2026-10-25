@@ -24,7 +24,8 @@ public class OriginSocketServer {
 
     public static void main(String[] args) throws Exception {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8081;
-        Path root = Paths.get(args.length > 1 ? args[1] : "media").toAbsolutePath().normalize();
+
+        Path root = Paths.get(args.length > 1 ? args[1] : "media").toAbsolutePath().normalize(); // coresponde à diretoria da media
 
         try (ServerSocket server = new ServerSocket(port)) {
             System.out.println("Origin server on http://localhost:" + port + "/media/<file.mp4>  (dir: " + root + ")");
@@ -74,8 +75,10 @@ public class OriginSocketServer {
         }
     }
 
+
+    // função responsavél por servir o ficheiro.
     static void serveFile(OutputStream out, Path file, String rangeHeader) throws IOException {
-        long size = Files.size(file);
+        long size = Files.size(file); // começava por obter todos os bytes a transmitir, assumindo que vai enviar todos.
         long start = 0, end = size - 1;
         boolean partial = false;
 
@@ -90,7 +93,7 @@ public class OriginSocketServer {
                     if (p.length > 1 && !p[1].isEmpty()) e = Math.min(Long.parseLong(p[1]), size - 1);
                 }
                 if (s > e || s >= size) {
-                    writeHeaders(out, 416, "Range Not Satisfiable", 0, null,
+                    writeHeaders(out, 416, "Range Not Satisfiable", 0, null, // se a range pretentidade ultrapassa a existente.
                             "Content-Range: bytes */" + size + "\r\n");
                     return;
                 }
@@ -102,14 +105,15 @@ public class OriginSocketServer {
             }
         }
 
+        // partial content, existe uma range pedida, cas contrário leva um 200 OK
         long length = end - start + 1;
         String extraHeaders = "Accept-Ranges: bytes\r\n" +
                 (partial ? "Content-Range: bytes " + start + "-" + end + "/" + size + "\r\n" : "");
         writeHeaders(out, partial ? 206 : 200, partial ? "Partial Content" : "OK", length, "video/mp4", extraHeaders);
 
-        try (RandomAccessFile raf = new RandomAccessFile(file.toFile(), "r")) {
+        try (RandomAccessFile raf = new RandomAccessFile(file.toFile(), "r")) { // abre o ficheiro em modo read-only
             raf.seek(start);
-            byte[] block = new byte[BLOCK_SIZE];
+            byte[] block = new byte[BLOCK_SIZE]; // lê 1024 bytes de cada vez e escreve-os no socket.
             long remaining = length;
             while (remaining > 0) {
                 int n = raf.read(block, 0, (int) Math.min(block.length, remaining));

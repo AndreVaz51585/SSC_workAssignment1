@@ -47,3 +47,10 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+
+# Local test media (keep setup instructions).
+/media/*
+!/media/README.md
+
+# Local cryptographic configuration contains the bootstrap PSK.
+/config/*.config
