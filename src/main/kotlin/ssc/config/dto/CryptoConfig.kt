@@ -12,6 +12,7 @@ data class CryptoConfig(
     val keySizeBits: Int,
     val macKey: KeyMaterial?,
     val macKeySizeBits: Int?,
+    val handshake: HandshakeConfig? = null,
 )
 
 /** Keeps decoded bytes out of generated toString() output and prevents mutation by callers. */

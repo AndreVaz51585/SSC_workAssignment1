@@ -1,25 +1,28 @@
+Current executable profiles and filenames: [config/README.md](../config/README.md).
+The suite adapter and validation sequence are explained in [crypto-profiles.md](crypto-profiles.md).
+
 # Local cryptographic configuration: parsing and policy
 
-This increment defines configuration rules, not a working secure channel. Streaming
-is still plaintext: Main and the socket handlers have not been wired to these rules.
-Passing validation does not claim handshake, encryption, replay protection or nonce
-uniqueness have been implemented.
+The secure proxy/server load and validate these rules before opening their listening
+sockets. Handshake and record protection use the resulting selected suite/settings.
+Local validation checks configuration consistency; peer agreement and per-record
+authentication/sequence checks are performed by the protocol at runtime.
 
 ## Organization
 
 - `config/dto/CryptoConfig`: parsed values, including decoded key material.
 - `config/CryptoConfigLoader`: XML structure, primitive conversions and key decoding.
-- `config/CipherSuite`: centrally defined planned profiles, algorithm families,
+- `config/CipherSuite`: centrally defined supported profiles, algorithm families,
   protection categories and nonce requirements.
 - `config/CryptoConfigValidator`: local semantic rules and JDK primitive availability.
-- `ValidatedCryptoConfig`: configuration plus resolved suite/MAC metadata, for later
-  handshake integration. It does not establish agreement with a peer.
+- `ValidatedCryptoConfig`: configuration plus resolved suite/MAC metadata, passed
+  to the handshake. Local validation alone does not establish peer agreement.
 
-Use `CryptoConfigValidator.validate(CryptoConfigLoader.load(path))` in code when
-ready to integrate. Invalid configurations throw IllegalArgumentException with
+The startup code uses `CryptoConfigValidator.validate(CryptoConfigLoader.load(path))`.
+Invalid configurations throw IllegalArgumentException with
 messages that omit secret values.
 
-## Planned profiles
+## Supported profiles
 
 | XML algorithm/mode | AES/ChaCha key bits | IVSize (bits) | Padding | MAC |
 | --- | --- | --- | --- | --- |
@@ -27,10 +30,9 @@ messages that omit secret values.
 | ChaCha20/Poly1305 | 256 | 96 | NULL or NoPadding | All separate MAC fields NULL |
 | AES/CTR | 128, 192, 256 | 128 | NULL or NoPadding | HMAC-SHA256, HMAC-SHA384 or HMAC-SHA512 |
 
-These profiles are candidates for incremental implementation. Acceptance by the
-validator is not equivalent to complete streaming support. Other profiles, such as
-AES/CBC, are rejected as outside this implementation's current scope, rather than
-being described as intrinsically invalid.
+All three constructions are integrated into handshake and streaming. Other profiles,
+such as AES/CBC, are rejected as outside the supported catalog, rather than being
+described as intrinsically invalid.
 
 AES remains a block cipher in GCM/CTR modes, even though no plaintext padding is
 needed. ChaCha20 is a stream cipher. This family classification is distinct from
@@ -42,23 +44,22 @@ whether the whole construction is AEAD or Encrypt-then-MAC.
   recommendation. This is not a universal GCM requirement.
 - IETF ChaCha20-Poly1305 uses 96-bit nonces. Its integrated Poly1305 tag does not
   use the separately configured MAC key.
-- AES/CTR uses a 128-bit counter block. Future implementation must ensure counter
+- AES/CTR uses a 128-bit counter block. The implementation ensures counter
   ranges do not overlap across messages, including increments inside a message.
   Merely incrementing each message's initial counter by one is insufficient.
 - IV must be NULL in all current XML profiles: fixed reusable IVs are deliberately
-  unsupported. IVSize describes the future runtime nonce/counter representation.
-  Fresh per-session directional keys and nonce management still need implementation.
+  unsupported. IVSize describes the runtime nonce/counter representation.
+  Fresh per-session directional keys and record counters are derived at runtime.
 - AEAD uses an integrated authentication tag; separate MAC fields are NULL by
   project policy, not because adding any external MAC is mathematically impossible.
 - HMAC keys must have at least 256/384/512 bits for SHA-256/384/512 respectively,
   and a whole number of bytes. These conservative minimums are project policies.
-- Keysize and MacKeySize must match the actual decoded bytes. SKey is provisionally
+- Keysize and MacKeySize must match the actual decoded bytes. SKey is
   the bootstrap PSK and its declared size also selects the intended traffic-key
-  size. Session traffic keys will be DH/KDF-derived rather than these static bytes.
+  size. Session traffic keys are DH/KDF-derived rather than these static bytes.
 - CTR's configured MacKey is an independent initial secret, not the final session
-  MAC key. Its precise use in the authenticated key schedule must be specified
-  before implementing the CTR profile. Runtime encryption/MAC keys must be separate
-  and derived for each direction/session. Equality of configured secrets is rejected;
+  MAC key. It is combined with SKey through HKDF into the authentication root.
+  Runtime encryption/MAC keys are separately derived for each phase/direction/session. Equality of configured secrets is rejected;
   their independent generation is an operator responsibility, not provable by XML.
 - Accepted HMAC names include both the assignment spelling `HMAC-SHA256` (etc.) and
   the JCA spelling `HmacSHA256`. Algorithm/mode matching is case-insensitive.
@@ -69,9 +70,13 @@ whether the whole construction is AEAD or Encrypt-then-MAC.
 
 The config schema preserves the assignment's main sections. The encoding attribute,
 corrected tag spelling, initial-key interpretation and dynamic-IV policy are explicit
-project decisions. Key agreement/authentication/KDF settings and tag lengths still
-need configuration fields when the complete handshake is specified; they are not
-silently fixed by this validator.
+project decisions. The optional Handshake section now declares the DH group, KDF, handshake
+authentication, tag length, random size, message limit, timeout and MaxStreamRecords
+(local record limit, including END). MaxStreamRecords is now required inside that
+section; the example profiles set it to 1048576, within the protocol ceiling of 2^32.
+The Handshake section is required
+by the integrated authenticated handshake exercise, with its own profile validator.
+See handshake.md for the exact schedule and implementation limits.
 
 ## Tests and private configuration
 

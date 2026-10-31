@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1700" viewBox="0 0 1600 1700" role="img"><title>02-handshake-type1-type2</title><rect width="100%" height="100%" fill="white"/>
+<text x="48" y="49.0" font-family="Arial, sans-serif" font-size="30" fill="#172b4d" font-weight="700">02 · Handshake · arranque, Type 1 e envio de Type 2</text>
+<text x="48" y="85.0" font-family="Arial, sans-serif" font-size="19" fill="#627086" font-weight="400">IMPLEMENTADO · teste TCP separado :8082 · o browser não participa no HandshakeDemo</text>
+<rect x="48" y="120" width="1504" height="200.0" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="150.0" font-family="Arial, sans-serif" font-size="20" fill="#176bba" font-weight="700">0 · Cada processo lê apenas o seu próprio .config</text>
+<text x="66" y="181.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">main() → HandshakeDemo.proxy(args) / HandshakeDemo.server(args)</text>
+<text x="66" y="209.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">CryptoConfigLoader.load(path, expectedRoot) → CryptoConfig + KeyMaterial + HandshakeConfig</text>
+<text x="66" y="237.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">CryptoConfigValidator.validate() consulta CipherSuite / MacSuite → ValidatedCryptoConfig</text>
+<text x="66" y="265.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">HandshakeConfigValidator.validate() → perfil executável AES-GCM; tudo antes de abrir sockets</text>
+<text x="66" y="293.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">Servidor: ServerSocket.accept(); proxy: Socket.connect(); ambos definem socket.soTimeout</text>
+<rect x="48" y="370" width="720" height="219.6" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="400.0" font-family="Arial, sans-serif" font-size="19" fill="#176bba" font-weight="700">PROXY · ProxyHandshake.perform(in, out, media)</text>
+<text x="66" y="431.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Construtor volta a validar o perfil do handshake.</text>
+<text x="66" y="457.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.validateMedia(media)</text>
+<text x="66" y="484.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">SecureRandom: NP (clientRandom) e SEQX</text>
+<text x="66" y="510.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">DiffieHellmanSession.createSession(): par DH A/a</text>
+<text x="66" y="537.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">exportPublicKeyBytes(): A pública em formato DER</text>
+<text x="66" y="564.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.proposal(): ProposedCryptoConfig</text>
+<rect x="832" y="370" width="720" height="219.6" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="850" y="400.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">SERVIDOR · ServerHandshake.perform(in, out)</text>
+<text x="850" y="431.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Construtor volta a validar o perfil do handshake.</text>
+<text x="850" y="457.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Obtém uma cópia local da PSK.</text>
+<text x="850" y="484.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.read(CLIENT_HELLO)</text>
+<text x="850" y="510.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">  → ProtocolMessageCodec.read(input, limite)</text>
+<text x="850" y="537.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Bloqueia à espera da primeira mensagem.</text>
+<text x="850" y="564.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Não usa ainda a chave DH recebida.</text>
+<rect x="48" y="650" width="720" height="219.6" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="680.0" font-family="Arial, sans-serif" font-size="19" fill="#176bba" font-weight="700">1 · Construir e autenticar ClientHello</text>
+<text x="66" y="711.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">ClientHelloPayload(SEQX, PCC, A, NP, tag vazia)</text>
+<text x="66" y="737.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakePayloadCodec.encodeClientHelloBody()</text>
+<text x="66" y="764.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.frame(): MessageHeader + payload</text>
+<text x="66" y="790.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.clientHelloAuthentication()</text>
+<text x="66" y="817.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.hmac(chave, header, body)</text>
+<text x="66" y="844.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.send() → ProtocolMessageCodec.write()</text>
+<rect x="832" y="650" width="720" height="219.6" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="850" y="680.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">1 · Ler e validar ClientHello</text>
+<text x="850" y="711.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.read(): versão + Type esperado</text>
+<text x="850" y="737.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakePayloadCodec.decodeClientHello()</text>
+<text x="850" y="764.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.clientHelloAuthentication()</text>
+<text x="850" y="790.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.hmac() → MessageDigest.isEqual()</text>
+<text x="850" y="817.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Compara PCC com HandshakeWire.proposal(local).</text>
+<text x="850" y="844.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Valida SEQX; só depois faz trabalho DH.</text>
+<path d="M400,930 L1200,930" fill="none" stroke="#176bba" stroke-width="2"/>
+<polyline points="1190.0950818741205,934.7846208752235 1200,930 1190.0950818741205,925.2153791247765" fill="none" stroke="#176bba" stroke-width="2"/>
+<text x="412" y="917.0" font-family="Arial, sans-serif" font-size="18" fill="#176bba" font-weight="700">TYPE 1 · header || SEQX || PCC || NP || A || HMAC-SHA256</text>
+<text x="48" y="978.0" font-family="Arial, sans-serif" font-size="20" fill="#627086" font-weight="400">Type 1: campos em claro; HMAC cobre header + body. A PSK nunca é enviada.</text>
+<rect x="48" y="1030" width="720" height="193.0" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="1060.0" font-family="Arial, sans-serif" font-size="19" fill="#176bba" font-weight="700">2 · Proxy aguarda ServerHello</text>
+<text x="66" y="1091.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.read(SERVER_HELLO)</text>
+<text x="66" y="1117.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">  → ProtocolMessageCodec.read()</text>
+<text x="66" y="1144.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">A resposta tem um prefixo público NB.</text>
+<text x="66" y="1170.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">NB permite derivar a chave antes de decifrar SRV.</text>
+<text x="66" y="1197.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">O proxy ainda não conhece B nem o segredo Z.</text>
+<rect x="832" y="1030" width="720" height="219.6" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="850" y="1060.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">2 · Preparar ServerHello</text>
+<text x="850" y="1091.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">SecureRandom: NB (serverRandom) e SRV (desafio)</text>
+<text x="850" y="1117.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">DiffieHellmanSession.createSession(): par DH B/b</text>
+<text x="850" y="1144.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">calculateSecret(A): valida A e calcula Z = DH(b, A)</text>
+<text x="850" y="1170.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.sha256(frame1) → H1</text>
+<text x="850" y="1197.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.serverHelloProtection()</text>
+<text x="850" y="1224.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">  PSK + NP + NB + H1 → chave e IV de Type 2</text>
+<rect x="832" y="1310" width="720" height="219.6" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="850" y="1340.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">3 · Cifrar e enviar Type 2</text>
+<text x="850" y="1371.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">ServerHelloPayload(SRV, SEQX+1, CCC, B)</text>
+<text x="850" y="1397.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakePayloadCodec.encodeServerHello()</text>
+<text x="850" y="1424.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.frame() reserva o comprimento final.</text>
+<text x="850" y="1450.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.encrypt(): AES-GCM + tag</text>
+<text x="850" y="1477.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">AAD = header2 || NB || H1</text>
+<text x="850" y="1504.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.send() → ProtocolMessageCodec.write()</text>
+<path d="M1200,1590 L400,1590" fill="none" stroke="#087f68" stroke-width="2"/>
+<polyline points="409.9049181258794,1585.2153791247765 400,1590 409.9049181258794,1594.7846208752235" fill="none" stroke="#087f68" stroke-width="2"/>
+<text x="412" y="1577.0" font-family="Arial, sans-serif" font-size="18" fill="#087f68" font-weight="700">TYPE 2 · header || NB || GCM(SEQY || SRV || CCC || B)</text>
+<text x="48" y="1645.0" font-family="Arial, sans-serif" font-size="20" fill="#627086" font-weight="400">NP e NB são públicos; SRV e B seguem cifrados. Cada frame inclui um header binário de 9 bytes.</text>
+</svg>

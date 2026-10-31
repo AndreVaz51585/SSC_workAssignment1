@@ -1,0 +1,56 @@
+services:
+  stream-server:
+    image: ssc-wa1:local
+    pull_policy: never
+    build: .
+    init: true
+    command: ["secure-server", "8082", "/app/media", "/app/config/server.config"]
+    volumes:
+      - type: bind
+        source: ./config/profiles/${CRYPTO_PROFILE:-aes256-gcm}/server.config
+        target: /app/config/server.config
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MEDIA_DIR:-./media}
+        target: /app/media
+        read_only: true
+        bind:
+          create_host_path: false
+    expose:
+      - "8082"
+    healthcheck:
+      # 1F92 = TCP 8082; 0A = LISTEN. Passive check avoids fake handshake connections.
+      test: ["CMD-SHELL", "grep -q ':1F92 .* 0A ' /proc/net/tcp /proc/net/tcp6"]
+      interval: 5s
+      timeout: 2s
+      retries: 6
+      start_period: 10s
+
+  proxy:
+    image: ssc-wa1:local
+    pull_policy: never
+    init: true
+    environment:
+      METRICS_FORMAT: ${METRICS_FORMAT:-summary}
+    command: ["secure-proxy", "8080", "stream-server", "8082", "/app/config/proxy.config"]
+    depends_on:
+      stream-server:
+        condition: service_healthy
+    ports:
+      - "${PROXY_PORT:-8080}:8080"
+    volumes:
+      - type: bind
+        source: ./config/profiles/${CRYPTO_PROFILE:-aes256-gcm}/proxy.config
+        target: /app/config/proxy.config
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      # 1F90 = TCP 8080; application-level playback is tested separately.
+      test: ["CMD-SHELL", "grep -q ':1F90 .* 0A ' /proc/net/tcp /proc/net/tcp6"]
+      interval: 5s
+      timeout: 2s
+      retries: 6
+      start_period: 10s

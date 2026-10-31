@@ -54,3 +54,9 @@ bin/
 
 # Local cryptographic configuration contains the bootstrap PSK.
 /config/*.config
+
+# Private paired configurations inside per-suite folders.
+/config/profiles/**/*.config
+
+# Local Docker Compose choices; the versioned .env.example contains no secrets.
+/.env

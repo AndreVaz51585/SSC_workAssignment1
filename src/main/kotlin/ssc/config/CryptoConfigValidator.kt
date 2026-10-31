@@ -10,7 +10,7 @@ object CryptoConfigValidator {
     fun validate(config: CryptoConfig): ValidatedCryptoConfig {
         val suite = CipherSuite.resolve(config.algorithm, config.mode)
         require(config.padding == null || config.padding.equals("NoPadding", true)) {
-            "As suites planeadas exigem Padding=NULL ou NoPadding"
+            "As suites do catálogo exigem Padding=NULL ou NoPadding"
         }
         // Project policy: the XML describes nonce length; it cannot supply a reusable fixed nonce.
         require(config.iv == null) {

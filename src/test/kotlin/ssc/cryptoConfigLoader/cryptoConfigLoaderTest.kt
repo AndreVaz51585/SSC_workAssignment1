@@ -36,6 +36,8 @@ class cryptoConfigLoaderTest {
         assertNull(config.macAlgorithm)
         assertNull(config.macKey)
         assertNull(config.macKeySizeBits)
+        assertEquals("ffdhe2048", assertNotNull(config.handshake).dhGroup)
+        assertEquals(1048576L, config.handshake.maxStreamRecords)
     }
 
     @Test
@@ -56,6 +58,8 @@ class cryptoConfigLoaderTest {
         assertNull(config.macAlgorithm)
         assertNull(config.macKey)
         assertNull(config.macKeySizeBits)
+        assertEquals("ffdhe2048", assertNotNull(config.handshake).dhGroup)
+        assertEquals(1048576L, config.handshake.maxStreamRecords)
     }
 
     @Test

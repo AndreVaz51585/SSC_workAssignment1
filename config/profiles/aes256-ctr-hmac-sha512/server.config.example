@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Template: provision matching independent SKey and MacKey values in both peer files. -->
+<ServerCryptoConfig version="1.0">
+    <SymCipherSuite>
+        <Algorithm>AES</Algorithm>
+        <Mode>CTR</Mode>
+        <InitializationVector>
+            <IV>NULL</IV>
+            <IVSize unit="bits">128</IVSize>
+        </InitializationVector>
+        <Padding>NULL</Padding>
+    </SymCipherSuite>
+    <MACSuite><Algorithm>HMAC-SHA512</Algorithm></MACSuite>
+    <ConfiguredKeys>
+        <SymmetricKey>
+            <SKey encoding="hex">REPLACE_WITH_64_HEX_DIGITS</SKey>
+            <Keysize>256</Keysize>
+        </SymmetricKey>
+        <MACKey><MacKey encoding="hex">REPLACE_WITH_INDEPENDENT_128_HEX_DIGITS</MacKey><MacKeySize>512</MacKeySize></MACKey>
+    </ConfiguredKeys>
+    <!-- Project extension: authenticated key exchange settings, not supplied by the assignment template. -->
+    <Handshake>
+        <DHGroup>ffdhe2048</DHGroup>
+        <Kdf>HKDF-SHA256</Kdf>
+        <Authentication>HMAC-SHA256</Authentication>
+        <TagSizeBits>512</TagSizeBits>
+        <RandomSizeBytes>32</RandomSizeBytes>
+        <MaxPayloadBytes>65536</MaxPayloadBytes>
+        <SocketTimeoutMillis>10000</SocketTimeoutMillis>
+        <MaxStreamRecords>1048576</MaxStreamRecords>
+    </Handshake>
+</ServerCryptoConfig>

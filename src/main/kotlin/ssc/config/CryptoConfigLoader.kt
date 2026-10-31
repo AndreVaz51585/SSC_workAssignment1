@@ -6,6 +6,7 @@ import org.xml.sax.ErrorHandler
 import org.xml.sax.SAXParseException
 import ssc.config.dto.CryptoConfig
 import ssc.config.dto.KeyMaterial
+import ssc.config.dto.HandshakeConfig
 import java.nio.file.Files
 import java.util.Base64
 import java.util.HexFormat
@@ -15,7 +16,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 object CryptoConfigLoader {
 
-    fun load(path: String): CryptoConfig {
+    fun load(path: String, expectedRoot: String? = null): CryptoConfig {
         val document = parseXml(path)
         document.documentElement.normalize()
 
@@ -24,11 +25,12 @@ object CryptoConfigLoader {
         require(root.tagName in setOf("ProxyCryptoConfig", "ServerCryptoConfig")) {
             "A raiz deve ser ProxyCryptoConfig ou ServerCryptoConfig"
         }
+        require(expectedRoot == null || root.tagName == expectedRoot) { "O ficheiro não corresponde à entidade esperada" }
         require(root.getAttribute("version") == "1.0") {
             "A versão do XML deve ser 1.0"
         }
 
-        requireChildren(root, "SymCipherSuite", "MACSuite", "ConfiguredKeys")
+        requireChildren(root, "SymCipherSuite", "MACSuite", "ConfiguredKeys", optional = setOf("Handshake"))
         val suite = getElement(root, "SymCipherSuite")
         requireChildren(suite, "Algorithm", "Mode", "InitializationVector", "Padding")
         val initializationVector = getElement(suite, "InitializationVector")
@@ -57,6 +59,21 @@ object CryptoConfigLoader {
                 ?: throw IllegalArgumentException("Keysize não pode ser NULL"),
             macKey = getKey(macKey, "MacKey"),
             macKeySizeBits = getNullableInteger(macKey, "MacKeySize"),
+            handshake = getOptionalElement(root, "Handshake")?.let { settings ->
+                requireChildren(settings, "DHGroup", "Kdf", "Authentication", "TagSizeBits",
+                    "RandomSizeBytes", "MaxPayloadBytes", "SocketTimeoutMillis", "MaxStreamRecords")
+                HandshakeConfig(
+                    dhGroup = getElementValue(settings, "DHGroup"),
+                    kdf = getElementValue(settings, "Kdf"),
+                    authentication = getElementValue(settings, "Authentication"),
+                    tagSizeBits = getInteger(settings, "TagSizeBits"),
+                    randomSizeBytes = getInteger(settings, "RandomSizeBytes"),
+                    maxPayloadBytes = getInteger(settings, "MaxPayloadBytes"),
+                    socketTimeoutMillis = getInteger(settings, "SocketTimeoutMillis"),
+                    maxStreamRecords = getElementValue(settings, "MaxStreamRecords").toLongOrNull()
+                        ?: throw IllegalArgumentException("<MaxStreamRecords> deve ser um número inteiro de 64 bits"),
+                )
+            },
         )
     }
 
@@ -123,7 +140,7 @@ object CryptoConfigLoader {
     }
 
     // Reject typos and duplicate sections instead of silently using part of a configuration.
-    private fun requireChildren(parent: Element, vararg names: String) {
+    private fun requireChildren(parent: Element, vararg names: String, optional: Set<String> = emptySet()) {
         val attributes = if (parent.parentNode is Document) arrayOf("version") else emptyArray()
         requireAttributes(parent, *attributes)
         require((0 until parent.childNodes.length).none {
@@ -133,8 +150,9 @@ object CryptoConfigLoader {
         }) { "Texto inesperado dentro de <${parent.tagName}>" }
         val elements = (0 until parent.childNodes.length)
             .map { parent.childNodes.item(it) }.filterIsInstance<Element>()
-        require(elements.all { it.tagName in names }) { "Elemento inesperado dentro de <${parent.tagName}>" }
+        require(elements.all { it.tagName in names || it.tagName in optional }) { "Elemento inesperado dentro de <${parent.tagName}>" }
         names.forEach { getElement(parent, it) }
+        optional.forEach { getOptionalElement(parent, it) }
     }
 
     private fun requireAttributes(element: Element, vararg allowed: String) {
@@ -142,6 +160,16 @@ object CryptoConfigLoader {
             "Atributo inesperado em <${element.tagName}>"
         }
     }
+
+    private fun getOptionalElement(parent: Element, tag: String): Element? {
+        val matches = (0 until parent.childNodes.length).map { parent.childNodes.item(it) }
+            .filterIsInstance<Element>().filter { it.tagName == tag }
+        require(matches.size <= 1) { "Elemento opcional repetido em <${parent.tagName}>" }
+        return matches.singleOrNull()
+    }
+
+    private fun getInteger(parent: Element, tag: String): Int =
+        getNullableInteger(parent, tag) ?: throw IllegalArgumentException("<$tag> não pode ser NULL")
 
     private fun getNullableInteger(parent: Element, tag: String): Int? =
         getNullableElementValue(parent, tag)?.let {

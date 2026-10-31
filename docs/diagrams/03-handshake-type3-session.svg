@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1690" viewBox="0 0 1600 1690" role="img"><title>03-handshake-type3-session</title><rect width="100%" height="100%" fill="white"/>
+<text x="48" y="49.0" font-family="Arial, sans-serif" font-size="30" fill="#172b4d" font-weight="700">03 · Handshake · validar Type 2, Type 3 e obter a sessão</text>
+<text x="48" y="85.0" font-family="Arial, sans-serif" font-size="19" fill="#627086" font-weight="400">IMPLEMENTADO até HandshakeSession · integração no vídeo ainda por desenvolver</text>
+<rect x="48" y="120" width="720" height="219.6" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="150.0" font-family="Arial, sans-serif" font-size="19" fill="#176bba" font-weight="700">PROXY · continua ProxyHandshake.perform()</text>
+<text x="66" y="181.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.read(SERVER_HELLO) devolve frame2.</text>
+<text x="66" y="207.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Separa prefixo NB do ciphertext + tag.</text>
+<text x="66" y="234.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.serverHelloProtection()</text>
+<text x="66" y="260.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">  → mesma chave/IV que o servidor derivou</text>
+<text x="66" y="287.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.decrypt(AAD = header2 || NB || H1)</text>
+<text x="66" y="314.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Verifica tag GCM antes de devolver plaintext.</text>
+<rect x="832" y="120" width="720" height="219.6" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="850" y="150.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">SERVIDOR · continua ServerHandshake.perform()</text>
+<text x="850" y="181.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Type 2 já foi enviado.</text>
+<text x="850" y="207.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Tem Z, PSK, NP, SRV e os dois frames.</text>
+<text x="850" y="234.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.sha256(frame1, frame2) → H12</text>
+<text x="850" y="260.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.sessionSecret()</text>
+<text x="850" y="287.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">  PSK + Z + NP + SRV + H12 → segredo da sessão</text>
+<text x="850" y="314.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Apaga a cópia do array Z com fill(0).</text>
+<rect x="48" y="410" width="720" height="219.6" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="440.0" font-family="Arial, sans-serif" font-size="19" fill="#176bba" font-weight="700">4 · Aceitar resposta e calcular segredo</text>
+<text x="66" y="471.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakePayloadCodec.decodeServerHello()</text>
+<text x="66" y="497.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Valida SEQY = SEQX+1 e CCC = proposta.</text>
+<text x="66" y="524.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">DiffieHellmanSession.calculateSecret(B) → Z</text>
+<text x="66" y="550.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.sha256(frame1, frame2) → H12</text>
+<text x="66" y="577.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.sessionSecret() → segredo</text>
+<text x="66" y="604.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Apaga a cópia do array Z com fill(0).</text>
+<rect x="832" y="410" width="720" height="193.0" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="850" y="440.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">4 · Aguardar confirmação do proxy</text>
+<text x="850" y="471.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.read(CLIENT_FINISHED)</text>
+<text x="850" y="497.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">  → ProtocolMessageCodec.read()</text>
+<text x="850" y="524.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.clientFinishedProtection()</text>
+<text x="850" y="550.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">  segredo + H12 → chave/IV próprios de Type 3</text>
+<text x="850" y="577.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Não começa a transmitir media nesta fase.</text>
+<rect x="48" y="700" width="720" height="219.6" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="730.0" font-family="Arial, sans-serif" font-size="19" fill="#176bba" font-weight="700">5 · Construir e cifrar ClientFinished</text>
+<text x="66" y="761.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">ClientFinishedPayload(SEQX+2, SHA256(SRV), media)</text>
+<text x="66" y="787.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakePayloadCodec.encodeClientFinished()</text>
+<text x="66" y="814.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeKeySchedule.clientFinishedProtection()</text>
+<text x="66" y="840.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.frame() → header3</text>
+<text x="66" y="867.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.encrypt(AAD = header3 || H12)</text>
+<text x="66" y="894.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.send() → ProtocolMessageCodec.write()</text>
+<rect x="832" y="700" width="720" height="219.6" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="850" y="730.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">5 · Verificar a confirmação recebida</text>
+<text x="850" y="761.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeCrypto.decrypt(AAD = header3 || H12)</text>
+<text x="850" y="787.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakePayloadCodec.decodeClientFinished()</text>
+<text x="850" y="814.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Valida SEQZ = SEQX+2.</text>
+<text x="850" y="840.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">MessageDigest.isEqual(R, SHA256(SRV))</text>
+<text x="850" y="867.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HandshakeWire.validateMedia(media)</text>
+<text x="850" y="894.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Autenticação GCM confirma posse do segredo DH.</text>
+<path d="M400,990 L1200,990" fill="none" stroke="#176bba" stroke-width="2"/>
+<polyline points="1190.0950818741205,994.7846208752235 1200,990 1190.0950818741205,985.2153791247765" fill="none" stroke="#176bba" stroke-width="2"/>
+<text x="412" y="977.0" font-family="Arial, sans-serif" font-size="18" fill="#176bba" font-weight="700">TYPE 3 · header || GCM(SEQZ || SHA256(SRV) || MEDIA)</text>
+<rect x="48" y="1040" width="1504" height="200.0" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="1070.0" font-family="Arial, sans-serif" font-size="20" fill="#176bba" font-weight="700">6 · Em ambos os participantes: construir HandshakeSession</text>
+<text x="66" y="1101.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">HandshakeCrypto.sha256(frame1, frame2, frame3) → H123 (transcript completo / sessionId)</text>
+<text x="66" y="1129.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">HandshakeKeySchedule.trafficKeys(segredo, H123) → SessionKeys(proxyToServer, serverToProxy)</text>
+<text x="66" y="1157.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">Cada direção tem ProtectionKeys(key, iv); KeyMaterial guarda cópias e oculta segredos em toString().</text>
+<text x="66" y="1185.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">HandshakeSession(keys, media, firstMediaSequence = SEQX+3, sessionId = H123)</text>
+<text x="66" y="1213.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">HandshakeDemo imprime apenas media / ID público, fecha o socket e termina o teste.</text>
+<rect x="48" y="1300" width="1504" height="130" rx="10" fill="#fff8eb" stroke="#d3a458" stroke-width="1.5"/>
+<text x="70" y="1334.0" font-family="Arial, sans-serif" font-size="23" fill="#a35c00" font-weight="700">Confirmação vista por cada lado</text>
+<text x="70" y="1372.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">Servidor: Type 3 verificado → aceita a sessão. Proxy: Type 2 verificado + Type 3 enviado.</text>
+<text x="70" y="1400.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">O proxy só terá confirmação da aceitação pelo servidor ao receber um primeiro registo protegido válido.</text>
+<rect x="48" y="1460" width="1504" height="175" rx="10" fill="#f7f8fa" stroke="#8792a2" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="70" y="1494.0" font-family="Arial, sans-serif" font-size="23" fill="#627086" font-weight="700">PRÓXIMA INTEGRAÇÃO · percurso pretendido, ainda sem implementação</text>
+<text x="70" y="1531.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Browser → pedido HTTP ao proxy → handshake com o servidor → Type 4 (blocos protegidos) → proxy</text>
+<text x="70" y="1557.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Proxy verifica sequência/tag, decifra e entrega bytes MP4 ao browser → Type 5 (END autenticado).</text>
+<text x="70" y="1584.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Falta definir/implementar contadores de nonce, registos Type 4/5, Range/catálogo e métricas.</text>
+<text x="70" y="1610.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">O IV de tráfego derivado aqui é uma base: não se pode reutilizá-lo diretamente em todos os blocos.</text>
+</svg>

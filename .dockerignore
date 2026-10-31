@@ -1,0 +1,14 @@
+# Allow only build inputs. Local keys, videos, Git history and test fixtures stay out.
+**
+!Dockerfile
+!.dockerignore
+!gradlew
+!gradle.properties
+!settings.gradle.kts
+!build.gradle.kts
+!gradle/
+!gradle/wrapper/
+!gradle/wrapper/**
+!src/
+!src/main/
+!src/main/**

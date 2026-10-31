@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1470" viewBox="0 0 1500 1470" role="img"><title>04-codecs-wire-errors</title><rect width="100%" height="100%" fill="white"/>
+<text x="48" y="49.0" font-family="Arial, sans-serif" font-size="30" fill="#172b4d" font-weight="700">04 · Do objeto Kotlin aos bytes no socket</text>
+<text x="48" y="85.0" font-family="Arial, sans-serif" font-size="19" fill="#627086" font-weight="400">Camadas chamadas pelos coordenadores ProxyHandshake / ServerHandshake</text>
+<rect x="48" y="130" width="670" height="512.2" rx="10" fill="#f0f7ff" stroke="#176bba" stroke-width="1.5"/>
+<text x="66" y="160.0" font-family="Arial, sans-serif" font-size="19" fill="#176bba" font-weight="700">ENVIO · do significado para a rede</text>
+<text x="66" y="191.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">1. DTO: ClientHelloPayload / ServerHelloPayload /</text>
+<text x="66" y="217.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   ClientFinishedPayload + ProposedCryptoConfig</text>
+<text x="66" y="244.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Guarda campos com significado; ainda não é a trama.</text>
+<text x="66" y="270.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">2. HandshakePayloadCodec.encode...()</text>
+<text x="66" y="297.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   DataOutputStream → ByteArrayOutputStream</text>
+<text x="66" y="324.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   writeLong / writeInt / writeText / writeFixed /</text>
+<text x="66" y="350.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   writeSized; writeConfig() só envia dados públicos.</text>
+<text x="66" y="377.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">3. HandshakeKeySchedule + HandshakeCrypto</text>
+<text x="66" y="403.79999999999995" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Type 1: HMAC(header || body).</text>
+<text x="66" y="430.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Types 2/3: encrypt(plaintext, key, iv, AAD).</text>
+<text x="66" y="457.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">4. HandshakeWire.frame() → ProtocolMessage</text>
+<text x="66" y="483.59999999999997" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   MessageHeader + payload final (ByteArray).</text>
+<text x="66" y="510.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   O header final é preparado antes de HMAC/AAD.</text>
+<text x="66" y="536.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">5. HandshakeWire.send(output, frame, limite)</text>
+<text x="66" y="563.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   → ProtocolMessageCodec.write()</text>
+<text x="66" y="590.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   → encodeHeader() → write(header) + write(payload)</text>
+<text x="66" y="616.5999999999999" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   → flush() no OutputStream do socket.</text>
+<rect x="782" y="130" width="670" height="512.2" rx="10" fill="#effaf6" stroke="#087f68" stroke-width="1.5"/>
+<text x="800" y="160.0" font-family="Arial, sans-serif" font-size="19" fill="#087f68" font-weight="700">RECEÇÃO · da rede para o significado</text>
+<text x="800" y="191.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">1. InputStream do socket</text>
+<text x="800" y="217.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   TCP entrega um fluxo: uma leitura pode ser parcial.</text>
+<text x="800" y="244.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">2. ProtocolMessageCodec.read(input, limite)</text>
+<text x="800" y="270.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Lê 9 bytes de header; extrai tipo e tamanho.</text>
+<text x="800" y="297.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Valida tamanho antes de alocar; lê payload todo.</text>
+<text x="800" y="324.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">3. HandshakeWire.read(input, esperado, limite)</text>
+<text x="800" y="350.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Valida versão/release e Type esperado.</text>
+<text x="800" y="377.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Type 255 recebido → aborta.</text>
+<text x="800" y="403.79999999999995" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">4. O coordenador aplica autenticação / cifra</text>
+<text x="800" y="430.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Type 1: decode limitado → verificar HMAC.</text>
+<text x="800" y="457.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   Types 2/3: decrypt() verifica a tag GCM</text>
+<text x="800" y="483.59999999999997" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   antes de disponibilizar o plaintext ao decoder.</text>
+<text x="800" y="510.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">5. HandshakePayloadCodec.decode...()</text>
+<text x="800" y="536.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   DataInputStream: readLong / readInt / readText /</text>
+<text x="800" y="563.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   readFixed / readSized + readConfig().</text>
+<text x="800" y="590.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">6. Coordenador verifica PCC/CCC, sequências,</text>
+<text x="800" y="616.5999999999999" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">   desafio e DH conforme a etapa.</text>
+<path d="M383,740 L1117,740" fill="none" stroke="#176bba" stroke-width="2"/>
+<polyline points="1107.0950818741205,744.7846208752235 1117,740 1107.0950818741205,735.2153791247765" fill="none" stroke="#176bba" stroke-width="2"/>
+<text x="395" y="727.0" font-family="Arial, sans-serif" font-size="18" fill="#176bba" font-weight="700">TCP · bytes ordenados; não preserva fronteiras de mensagens</text>
+<rect x="48" y="800" width="1404" height="155" rx="10" fill="#f7f9fc" stroke="#9eacc1" stroke-width="1.5"/>
+<text x="70" y="835.0" font-family="Arial, sans-serif" font-size="22" fill="#172b4d" font-weight="700">TRAMA NO FIO · big endian</text>
+<text x="70" y="873.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">version: 2 bytes  |  release: 2 bytes  |  type: 1 byte  |  payloadLength: 4 bytes  |  payload: N bytes</text>
+<text x="70" y="901.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">Header = 9 bytes. payloadLength inclui prefixos públicos, ciphertext e tags, quando existirem.</text>
+<text x="70" y="929.0" font-family="Arial, sans-serif" font-size="20" fill="#172b4d" font-weight="400">Os DTOs, a PSK e os ficheiros XML não são serializados automaticamente para a rede.</text>
+<rect x="48" y="1000" width="1404" height="272.79999999999995" rx="10" fill="#fff8eb" stroke="#a35c00" stroke-width="1.5"/>
+<text x="66" y="1030.0" font-family="Arial, sans-serif" font-size="19" fill="#a35c00" font-weight="700">SE ALGO FALHAR · localizar a camada primeiro</text>
+<text x="66" y="1061.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">XML mal formado / tag em falta → CryptoConfigLoader.load(); nem chega a abrir o socket.</text>
+<text x="66" y="1087.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Combinação / perfil não suportado → CryptoConfigValidator / HandshakeConfigValidator.</text>
+<text x="66" y="1114.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Recusa de ligação / timeout → socket.connect(), accept() ou leitura com soTimeout.</text>
+<text x="66" y="1140.8" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Trama truncada / tamanho inválido → ProtocolMessageCodec.read(); tipo/versão → HandshakeWire.read().</text>
+<text x="66" y="1167.4" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">HMAC inválido (Type 1) → PSK, chave derivada ou header/body diferentes.</text>
+<text x="66" y="1194.0" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Tag GCM inválida (Types 2/3) → chave, IV, AAD ou ciphertext diferentes / adulterados.</text>
+<text x="66" y="1220.6" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">Tag válida mas sequência / CCC / desafio incorretos → verificações do coordenador.</text>
+<text x="66" y="1247.2" font-family="Arial, sans-serif" font-size="19" fill="#172b4d" font-weight="400">catch: HandshakeWire.alert() tenta enviar Type 255; relança erro; Demo.use fecha a ligação.</text>
+<text x="48" y="1390.0" font-family="Arial, sans-serif" font-size="19" fill="#627086" font-weight="400">Type 255 antes da sessão é diagnóstico não autenticado; não autoriza baixar a segurança.</text>
+<text x="48" y="1416.6" font-family="Arial, sans-serif" font-size="19" fill="#627086" font-weight="400">Este mapa descreve o código atual de 26/10/2026; atualizar ao integrar o streaming protegido.</text>
+</svg>

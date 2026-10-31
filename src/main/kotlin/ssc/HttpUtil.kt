@@ -2,13 +2,14 @@ package ssc
 
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.io.IOException
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 object HttpUtil {
     // Read only through CRLF, leaving binary body bytes untouched.
-    fun readLine(input: InputStream): String? {
+    fun readLine(input: InputStream, maxLength: Int = 8192): String? {
         val line = ByteArrayOutputStream()
         var previous = -1
         while (true) {
@@ -18,6 +19,7 @@ object HttpUtil {
                 val bytes = line.toByteArray()
                 return String(bytes, 0, bytes.size - 1, StandardCharsets.US_ASCII)
             }
+            if (line.size() >= maxLength) throw IOException("Linha HTTP demasiado longa")
             line.write(current)
             previous = current
         }
