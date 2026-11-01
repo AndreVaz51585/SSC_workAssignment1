@@ -13,6 +13,9 @@ previamente partilhados, DH efémero no grupo ffdhe2048 e HKDF-SHA256. Os regist
 são protegidos por AES-GCM, ChaCha20-Poly1305 ou AES-CTR com HMAC, conforme o XML.
 A proteção cobre o troço proxy–servidor; a ligação ao browser continua a usar HTTP.
 
+O relatório técnico está disponível em [docs/79264-WA1-Report.pdf](docs/79264-WA1-Report.pdf),
+com a arquitetura, o protocolo, as decisões de implementação e os resultados dos testes.
+
 ## 1. Obter o projeto
 
 ```sh
