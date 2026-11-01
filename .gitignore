@@ -48,9 +48,8 @@ bin/
 .DS_Store
 
 
-# Local test media (keep setup instructions).
+# Local test media.
 /media/*
-!/media/README.md
 
 # Local cryptographic configuration contains the bootstrap PSK.
 /config/*.config

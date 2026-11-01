@@ -1,10 +1,17 @@
 # SSC — Work Assignment 1
 
-Streaming de ficheiros MP4 entre um servidor e um proxy, com um canal autenticado
-e cifrado. O browser recebe o vídeo por HTTP a partir do proxy.
+Streaming de vídeo MP4 com um canal autenticado e cifrado entre o proxy e o
+servidor. O browser recebe a página e o vídeo por HTTP a partir do proxy.
 
-Implementação em Kotlin/JVM, com JDK 21 e Gradle. Suporta AES-GCM,
-ChaCha20-Poly1305 e AES-CTR com HMAC, selecionados por XML.
+```text
+Browser -- HTTP --> Proxy -- protocolo seguro --> Stream Server
+          :8080                                  :8082
+```
+
+Implementação em Kotlin/JVM, com JDK 21 e Gradle. O handshake usa segredos
+previamente partilhados, DH efémero no grupo ffdhe2048 e HKDF-SHA256. Os registos
+são protegidos por AES-GCM, ChaCha20-Poly1305 ou AES-CTR com HMAC, conforme o XML.
+A proteção cobre o troço proxy–servidor; a ligação ao browser continua a usar HTTP.
 
 ## 1. Obter o projeto
 
@@ -14,15 +21,17 @@ cd SSC_workAssignment1
 ```
 
 Executar os comandos seguintes nesta pasta, onde estão `gradlew` e `compose.yaml`.
-Para arrancar com Docker basta Docker com Compose. Para compilar ou executar os
-testes fora de Docker é necessário JDK 21; o Gradle Wrapper está incluído.
-A primeira compilação precisa de acesso à Internet para descarregar dependências.
-Os comandos assumem um terminal macOS/Linux. A preparação dos segredos usa OpenSSL
-e um editor de texto para preencher os XML.
 
-## 2. Preparar a configuração e o vídeo
+- Para executar com Docker: Docker com Compose.
+- Para compilar ou executar os testes localmente: JDK 21. O Gradle Wrapper está incluído.
+- Para preparar os segredos: OpenSSL e um editor de texto.
 
-Numa cópia limpa, os XML privados ainda não existem. Para começar com AES-256-GCM:
+Os comandos assumem macOS/Linux. A primeira compilação precisa de Internet para
+descarregar as dependências.
+
+## 2. Preparar a configuração e os vídeos
+
+Numa cópia limpa, criar os dois XML a partir dos templates. Para AES-256-GCM:
 
 ```sh
 cp config/profiles/aes256-gcm/proxy.config.example config/profiles/aes256-gcm/proxy.config
@@ -30,20 +39,23 @@ cp config/profiles/aes256-gcm/server.config.example config/profiles/aes256-gcm/s
 openssl rand -hex 32
 ```
 
-Guardar o valor gerado no campo `SKey` dos **dois** ficheiros, substituindo
-`REPLACE_WITH_64_HEX_DIGITS`. Usar o mesmo valor no proxy e no servidor.
-Os restantes campos destes templates já estão preparados para este perfil.
-Se os ficheiros já estiverem configurados, não é necessário voltar a copiá-los.
+Substituir `REPLACE_WITH_64_HEX_DIGITS` em `SKey` pelo valor gerado, nos dois ficheiros.
+O proxy e o servidor usam a mesma PSK. Os restantes campos já estão preparados
+para este perfil. Se os XML já estiverem preenchidos, não é necessário copiá-los de novo.
 
-A SKey é o segredo inicial partilhado (PSK). As chaves de tráfego são derivadas
-num novo handshake com DH; não são simplesmente a PSK copiada para cada sessão.
-Os XML privados são ignorados pelo Git. Os ficheiros em `src/test/resources/`
-contêm valores públicos exclusivamente para testes.
+As chaves de tráfego são derivadas num novo handshake por pedido; não são a PSK
+copiada para a sessão. Os XML privados são ignorados pelo Git. Os valores em
+`src/test/resources/` são públicos e destinam-se exclusivamente aos testes.
 
-Colocar pelo menos um MP4 compatível com o browser diretamente em `media/`.
+Criar a pasta de media e colocar nela pelo menos um MP4 compatível com o browser:
+
+```sh
+mkdir -p media
+```
+
 Por exemplo, `media/sintel.mp4`, com vídeo H.264 e áudio AAC. Os vídeos não estão
-incluídos no repositório. Nos comandos abaixo, substituir `sintel.mp4` pelo nome
-real do ficheiro utilizado.
+incluídos no repositório. Nos comandos seguintes, substituir `sintel.mp4` pelo
+nome do ficheiro utilizado.
 
 ## 3. Arrancar com Docker
 
@@ -52,18 +64,18 @@ docker compose up -d
 ```
 
 Abrir http://localhost:8080/, escolher um vídeo e iniciar a reprodução. Testar também
-avanço/recuo na barra do vídeo.
+o avanço e recuo na barra do vídeo.
 
 ```sh
 docker compose ps
 docker compose logs -f proxy
 ```
 
-O Compose inicia `stream-server` e `proxy`. A ligação segura usa
-`stream-server:8082` dentro da rede Docker. Só a porta 8080 do proxy é publicada.
-Os vídeos e os XML são montados externamente, só para leitura.
+O Compose inicia `stream-server` e `proxy`. O proxy liga-se a `stream-server:8082`
+na rede Docker. Só a porta 8080 do proxy é publicada no host. Os XML e os vídeos
+são montados externamente, só para leitura.
 
-Parar a aplicação:
+Parar os serviços:
 
 ```sh
 docker compose down
@@ -71,36 +83,64 @@ docker compose down
 
 Depois de alterar código, reconstruir a imagem com `docker compose up -d --build`.
 Depois de editar XML, usar `docker compose up -d --force-recreate` para recarregar
-os ficheiros. A alteração de parâmetros criptográficos não exige reconstrução.
-Se 8080 estiver ocupada, usar `PROXY_PORT=8085 docker compose up -d` e abrir 8085.
+os ficheiros. Alterar os parâmetros criptográficos não exige recompilar ou
+reconstruir a imagem. Se 8080 estiver ocupada, usar
+`PROXY_PORT=8085 docker compose up -d` e abrir http://localhost:8085/.
 
 ## 4. Escolher outro perfil
 
-Preparar os dois XML da pasta pretendida e executar, por exemplo:
+Cada pasta em `config/profiles/` contém um template para o proxy e outro para o
+servidor. Copiar ambos para `proxy.config` e `server.config`, como no passo 2,
+e preencher os segredos com os tamanhos correspondentes:
+
+| Pasta | SKey | MacKey | Tag dos registos |
+| --- | --- | --- | --- |
+| `aes128-gcm` | 16 bytes | — | 128 bits |
+| `aes192-gcm` | 24 bytes | — | 128 bits |
+| `aes256-gcm` | 32 bytes | — | 128 bits |
+| `chacha20-poly1305` | 32 bytes | — | 128 bits |
+| `aes128-ctr-hmac-sha256` | 16 bytes | 32 bytes | 256 bits |
+| `aes192-ctr-hmac-sha256` | 24 bytes | 32 bytes | 256 bits |
+| `aes256-ctr-hmac-sha256` | 32 bytes | 32 bytes | 256 bits |
+| `aes256-ctr-hmac-sha384` | 32 bytes | 48 bytes | 384 bits |
+| `aes256-ctr-hmac-sha512` | 32 bytes | 64 bytes | 512 bits |
+
+Gerar cada segredo com `openssl rand -hex N`, onde N é o número de bytes da tabela.
+Nos perfis CTR, gerar SKey e MacKey separadamente. Copiar a mesma SKey e a mesma
+MacKey para os dois extremos do par. O hexadecimal tem dois caracteres por byte.
+
+Para selecionar o par preparado, por exemplo:
 
 ```sh
 CRYPTO_PROFILE=chacha20-poly1305 docker compose up -d --force-recreate
 ```
 
-Existem nove pares de exemplo: AES-GCM com 128/192/256 bits, ChaCha20-Poly1305,
-AES-CTR com 128/192/256 bits e HMAC-SHA256, e AES-CTR-256 com HMAC-SHA384/512.
-Os perfis CTR precisam também de um MacKey independente, igual nos dois peers.
-Tamanhos e comandos de preparação: [config/README.md](config/README.md).
+É utilizada a mesma imagem. Os processos reiniciam e leem os novos XML; as ligações
+em curso são interrompidas. Para manter a escolha nos comandos seguintes, definir
+`CRYPTO_PROFILE` num ficheiro `.env`, usando `.env.example` como referência.
 
-Ambos os lados têm de confirmar a mesma configuração e possuir os mesmos segredos.
-O servidor aceita ou rejeita a proposta do proxy; não há seleção entre listas nem
-fallback automático. Os algoritmos suportados constam do catálogo da implementação.
+O servidor confirma ou rejeita a proposta autenticada do proxy. Ambos têm de usar
+configurações compatíveis e os mesmos segredos; não há negociação de listas ou
+fallback automático. O conteúdo do XML seleciona o algoritmo, não o nome da pasta.
+
+O carregamento rejeita XML malformado, DTD/entidades externas e campos inesperados.
+A validação verifica combinações, tamanhos de chave, parâmetros e suporte no JDK
+antes de abrir sockets. Os perfis usam `Padding=NULL/NoPadding` e `IV=NULL`, com
+IVs/nonces geridos pelo protocolo. AEAD exige os campos MAC adicionais a NULL;
+CTR exige HMAC e uma MacKey independente.
 
 ## 5. Executar os testes
 
-Com JDK 21, sem precisar de arrancar Docker nem preparar XML privados ou vídeos:
+Com JDK 21, sem arrancar Docker nem preparar XML privados ou vídeos:
 
 ```sh
-./gradlew test
+./gradlew test --console=plain
 ```
 
-Os testes usam configurações públicas e dados temporários. O relatório HTML fica em
-`build/reports/tests/test/index.html`.
+Os testes usam configurações públicas e dados temporários. O relatório HTML fica
+em `build/reports/tests/test/index.html`. Incluem vetores criptográficos conhecidos,
+validação XML, codecs, handshake, proteção dos registos e integração HTTP nos nove
+perfis, com verificação dos bytes recebidos e dos estados HTTP.
 
 Só os cenários de atacante:
 
@@ -108,50 +148,69 @@ Só os cenários de atacante:
 ./gradlew test --tests 'ssc.adversarial.adversarialTest' --console=plain
 ```
 
-A classe contém C0 (transferência autorizada) e casos separados para segredos
-incorretos, substituição DH, alteração, replay, remoção, reordenação, truncamento e
-mensagens malformadas. Um teste negativo passa quando a operação inválida é
-rejeitada segundo as verificações do caso. Os testes não atacam serviços externos.
+Os ataques são representados nos testes Kotlin: um filtro altera os frames antes
+de os entregar pelo socket ao recetor. O código de receção e validação é o mesmo
+da aplicação. Não é necessário modificar o código de produção ou usar scripts externos.
 
-Guia dos casos e resultados esperados: [matriz de ameaças](docs/matriz-ameacas.md).
-Uma execução filtrada gera apenas o relatório desse subconjunto; executar novamente
-`./gradlew test` para obter o relatório da suite completa.
+| Casos | O que é alterado | Resultado esperado |
+| --- | --- | --- |
+| C0 | Nenhuma alteração; participantes com configuração correta | Conteúdo recebido igual ao original |
+| A1 | PSK incorreta ou MacKey incorreta em CTR | Handshake rejeitado |
+| A2 | Proposta, pública DH, tags, random ou ordem do handshake | Mensagem rejeitada; servidor não inicia o stream |
+| A3 | Ciphertext, tag DATA ou metadados | Registo adulterado não é encaminhado |
+| A4 | DATA repetido ou mensagem 2/3 de outra sessão | Sequência ou contexto de sessão rejeitado |
+| A5 | Remoção ou troca de ordem de DATA | Sequência inesperada; resposta incompleta |
+| A6 | END removido ou adulterado | Transferência não termina com sucesso |
+| A7 | Comprimento excessivo, header incompleto ou tipo desconhecido | Erro de framing; comprimento excessivo rejeitado antes de alocar o payload |
 
-## 6. Validação manual e métricas
+Um teste negativo passa quando a operação inválida é rejeitada. No HTML é possível
+abrir a classe `adversarialTest` e consultar os 22 métodos separadamente.
+Uma execução filtrada gera apenas o relatório desse subconjunto; executar de novo
+`./gradlew test --console=plain` para obter o relatório completo.
 
-Abrir três janelas do browser e reproduzir vídeos simultaneamente valida clientes
-concorrentes no mesmo proxy. A validação manual já confirmada está em
-[validacao-manual.md](docs/validacao-manual.md). Isto não corresponde a três
-processos distintos de proxy.
+## 6. Validar a reprodução e as métricas
 
-Para executar um segundo proxy contra o mesmo servidor Docker, manter o Compose
-normal ativo e, noutro terminal, executar:
+Com Docker ativo, abrir três janelas em http://localhost:8080/, selecionar vídeos
+e iniciar a reprodução em simultâneo. As três janelas usam o mesmo proxy. Procurar
+outra posição num vídeo deve continuar a permitir a reprodução nas restantes janelas.
 
-```sh
-docker compose run --rm --publish 8085:8080 proxy
-```
-
-Abrir 8080 e 8085 em browsers, selecionar vídeos diferentes e observar a reprodução
-simultânea. Aguardar a mensagem de arranque do segundo proxy antes de abrir 8085.
-Ctrl+C termina o segundo proxy; `docker compose down` termina o conjunto
-normal. Usar os mesmos valores de CRYPTO_PROFILE nas duas invocações se mudaram do
-default. O resultado deste cenário deve ser registado quando for efetivamente testado.
-
-Os logs mostram o resultado de cada transferência, volume encaminhado/esperado,
-tamanho original, blocos autenticados/encaminhados, volume do protocolo, duração e
-MB/s. Um Broken pipe pode resultar de o browser cancelar um pedido ao fazer seek;
-a transferência fica marcada como interrompida.
-
-Para comparar uma transferência completa com o original:
+Para comparar uma transferência completa com o ficheiro original:
 
 ```sh
 mkdir -p build
 curl --fail http://localhost:8080/video/sintel.mp4 -o build/received.mp4
 shasum -a 256 media/sintel.mp4 build/received.mp4
+docker compose logs --no-log-prefix --tail 4 proxy
 ```
 
-Os dois hashes devem coincidir. Em Linux pode usar-se `sha256sum`.
-Para obter contagens exatas em vez dos valores arredondados do resumo:
+Os hashes devem coincidir. Em Linux pode usar-se `sha256sum`. Para uma transferência
+completa, o log deve indicar `[STREAM OK]`, HTTP 200, volume encaminhado igual ao
+comprimento esperado e o mesmo número de blocos DATA autenticados e encaminhados.
+
+Para verificar um intervalo de 1024 bytes:
+
+```sh
+curl --fail --silent --show-error --dump-header build/range-headers.txt \
+  --range 0-1023 http://localhost:8080/video/sintel.mp4 -o build/range.bin
+cat build/range-headers.txt
+wc -c < build/range.bin
+```
+
+Esperado: HTTP 206, `Content-Length: 1024` e `Content-Range: bytes 0-1023/TOTAL`,
+onde TOTAL é o tamanho original. O ficheiro recebido deve ter 1024 bytes.
+
+Os logs mostram volume encaminhado/esperado, tamanho original, blocos DATA
+autenticados/encaminhados, volume do protocolo, duração e MB/s. O volume do protocolo
+inclui frames, sequências, tags, metadados e END; exclui handshake e TCP/IP.
+A duração começa após o handshake e inclui leitura, autenticação, decifragem e
+escrita para o browser. kB e MB são decimais; throughput = bytes encaminhados / duração.
+
+Um `Broken pipe` pode resultar de o browser cancelar um pedido ao fazer seek.
+Os contadores podem diferir numa interrupção: um bloco pode ter sido autenticado
+sem a escrita para o browser terminar. O recetor mantém um bloco pendente até
+validar o seguinte ou END. Estes contadores não representam pacotes TCP.
+
+Para obter contagens exatas em vez dos valores arredondados:
 
 ```sh
 METRICS_FORMAT=detailed docker compose up -d --force-recreate
@@ -159,12 +218,33 @@ docker compose logs --no-log-prefix proxy
 ```
 
 Para regressar ao resumo, repetir o primeiro comando com `METRICS_FORMAT=summary`.
-A duração do proxy começa após o handshake e inclui leitura, autenticação,
-decifragem e escrita para o browser. kB e MB são decimais. Distinguir downloads
-completos, ranges e cancelamentos ao comparar resultados.
+Distinguir downloads completos, ranges e cancelamentos ao comparar resultados.
 
-Definições dos campos: [stream-metrics.md](docs/stream-metrics.md).
-Procedimentos de medição: [performance.md](docs/performance.md).
+### Várias instâncias do proxy
+
+Para executar proxies independentes contra o mesmo servidor, manter o Compose
+normal ativo e iniciar cada proxy adicional num terminal separado:
+
+```sh
+# Segundo proxy: porta 8085 do host.
+docker compose run --rm --publish 8085:8080 proxy
+```
+
+```sh
+# Terceiro proxy: porta 8086 do host.
+docker compose run --rm --publish 8086:8080 proxy
+```
+
+Abrir http://localhost:8080/, http://localhost:8085/ e http://localhost:8086/ e
+reproduzir vídeos diferentes em simultâneo. Aguardar a mensagem de arranque de
+cada proxy antes de abrir a página. Cada container tem o seu próprio processo,
+sockets e sessões; todos usam `stream-server:8082`. A porta interna 8080 pode ser
+igual porque os containers são distintos. Se o perfil foi alterado, manter a mesma
+configuração `.env` ou variável `CRYPTO_PROFILE` nas três invocações.
+
+Ctrl+C termina cada proxy adicional. `docker compose down` termina os dois serviços
+normais. As janelas na mesma porta e os processos em portas diferentes permitem
+verificar, respetivamente, vários clientes e várias instâncias do proxy.
 
 ## 7. Compilar e executar sem Docker
 
@@ -184,23 +264,42 @@ Proxy, no segundo:
 ./gradlew run --args="secure-proxy 8080 localhost 8082 config/profiles/aes256-gcm/proxy.config"
 ```
 
-Parar o proxy Docker antes de usar a mesma porta 8080. Os caminhos indicados são
-explícitos porque os XML privados dos comandos por omissão não existem num clone.
+Parar os containers que ocupem as mesmas portas antes de arrancar os processos
+locais. Para mudar de perfil, parar os processos e indicar outro par de XML.
 
-Para executar sem invocar Gradle em cada arranque:
+### Executar em duas máquinas
+
+Nas duas máquinas, com JDK 21 e uma cópia do projeto:
 
 ```sh
 ./gradlew installDist
+```
+
+Preparar um par de XML compatível, com os mesmos segredos. A máquina do servidor
+precisa dos vídeos e de `server.config`; a do proxy precisa de `proxy.config`.
+Transferir os segredos por um canal de confiança. Apenas o servidor precisa da pasta media.
+
+Na máquina A, executar o servidor:
+
+```sh
 build/install/SSC_workAssignment/bin/SSC_workAssignment secure-server 8082 media config/profiles/aes256-gcm/server.config
 ```
 
-O launcher aceita os mesmos argumentos. Para o sistema distribuído em dois
-computadores, substituir `localhost` pelo endereço do servidor e seguir
-[as instruções de execução distribuída](docs/secure-browser.md#run-on-two-physical-machines).
+Na máquina B, substituir `192.168.1.20` pelo endereço acessível de A:
 
-## 8. Baseline e documentação do protocolo
+```sh
+build/install/SSC_workAssignment/bin/SSC_workAssignment secure-proxy 8080 192.168.1.20 8082 config/profiles/aes256-gcm/proxy.config
+```
 
-A baseline sem proteção continua disponível. Executar em terminais separados:
+Permitir TCP 8082 de B para A na rede/firewall. Em B, abrir http://localhost:8080/.
+Num terceiro computador, usar o endereço de B e permitir acesso à sua porta 8080.
+Verificar reprodução, seek e uma transferência completa, comparando o SHA-256 com
+o original em A. `localhost` identifica sempre a máquina onde o processo corre.
+
+## 8. Baseline e organização do código
+
+A baseline sem proteção continua disponível. Executar em terminais separados,
+sem outros processos a ocupar as mesmas portas:
 
 ```sh
 ./gradlew run --args="server 8081 media"
@@ -208,15 +307,20 @@ A baseline sem proteção continua disponível. Executar em terminais separados:
 ```
 
 O último argumento desativa o atraso artificial de 2000 ms/read da referência.
-Evitar conflitos de portas com a execução segura. O código Java fornecido está
-preservado em `reference/WA1-Materials/`.
+O código Java fornecido está preservado em `reference/WA1-Materials/`.
 
-O protocolo usa Types 1/2/3 para o handshake, Type 4 para metadados/dados protegidos,
-Type 5 para END e Type 255 para alertas. A serialização binária, os campos DH/random
-adicionais e os subtipos de Type 4 são decisões documentadas da implementação.
+| Componente | Responsabilidade |
+| --- | --- |
+| `SecureProxyServer` / `SecureStreamServer` | Sockets, pedidos e integração com o stream |
+| `CryptoConfigLoader` / validadores | Leitura do XML e validação antes do arranque |
+| `ProxyHandshake` / `ServerHandshake` | Autenticação, proposta/confirmação e estabelecimento da sessão |
+| `HandshakeKeySchedule` / `MessageProtection` | Derivação de chaves e proteção AEAD ou Encrypt-then-MAC |
+| Codecs em `ssc/protocol` | Representação binária de headers e payloads |
+| `SecureStreamSender` / `SecureStreamReceiver` | Metadados, DATA, sequência e END |
+| `SecureMediaSource` / `MediaRanges` | Seleção de ficheiros e intervalos de bytes |
+| `StreamMetrics` | Contagens, volumes, duração e throughput |
 
-- [Handshake e derivação de chaves](docs/handshake.md)
-- [Streaming e integração HTTP/Range](docs/secure-browser.md)
-- [Configuração e proteção AEAD/Encrypt-then-MAC](docs/crypto-profiles.md)
-- [Modelo de ameaças e evidência](docs/threat-model.md)
-- [Detalhes da execução Docker](docs/docker.md)
+O protocolo usa Types 1/2/3 no handshake, Type 4 para metadados e DATA protegidos,
+Type 5 para END e Type 255 para alertas do handshake. As públicas DH, randoms,
+tags, Range e metadados complementam os campos de referência. Cada pedido cria
+uma sessão nova; cada registo é associado à sua sequência e ao contexto da sessão.
